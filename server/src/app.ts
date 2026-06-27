@@ -28,7 +28,7 @@ app.use(
 
 // HTTP request logging
 app.use(
-  morgan(config.NODE_ENV === 'production' ? 'combined' : 'dev', {
+  morgan(config.NODE_ENV === 'development' ? 'combined' : 'dev', {
     stream: { write: (msg) => logger.http(msg.trim()) },
   })
 );
@@ -48,15 +48,19 @@ const authLimiter = rateLimit({
 // Routes
 
 
+
+
 // Health check
 app.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok', env: config.NODE_ENV });
 });
 
+
 // 404 handler — catches any route not matched above
 app.use((_req: Request, res: Response) => {
   res.status(404).json({ error: 'Route not found' });
 });
+
 
 // Global error handler — Express 5 propagates async errors automatically
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
