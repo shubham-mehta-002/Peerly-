@@ -1,6 +1,5 @@
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import { OAuth2Client } from 'google-auth-library';
 import { config } from '../../config';
 import { sendOTPEmail, sendPasswordResetEmail } from '../../lib/email';
 import { AppError } from '../../lib/errors';

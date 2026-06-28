@@ -7,6 +7,11 @@ import { config } from './config';
 import { logger } from './lib/logger';
 import { AppError } from './lib/errors';
 import authRouter from "./modules/auth/auth.router";
+import postsRouter from "./modules/posts/posts.router";
+import onboardingRouter from "./modules/onboarding/onboarding.router";
+import profileRouter from "./modules/profile/profile.router";
+import adminRouter from "./modules/admin/admin.router"
+import reportsRouter from "./modules/reports/reports.router";
 
 const app = express();
 
@@ -47,7 +52,11 @@ const authLimiter = rateLimit({
 
 // Routes
 app.use('/api/auth', authLimiter, authRouter);
-
+app.use('/api/posts', postsRouter);
+app.use('/api/onboarding', onboardingRouter);
+app.use('/api/posts', reportsRouter);
+app.use('/api/profile', profileRouter);
+app.use('/api/admin', adminRouter);
 
 
 // Health check

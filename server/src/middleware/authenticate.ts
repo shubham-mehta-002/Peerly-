@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { verifyToken, JWTPayload } from '../lib/jwt';
 import { supabase } from '../lib/supabase';
 import { logger } from '../lib/logger';
+import { AppError } from '../lib/errors';
 
 declare global {
   namespace Express {
@@ -40,7 +41,7 @@ export async function authenticate(
         userId: payload.userId,
         error: error.message,
       });
-      res.status(401).json({ error: 'Invalid or expired token' });
+      throw new AppError(401,"Invalid or expired token")
       return;
     }
 
@@ -55,6 +56,6 @@ export async function authenticate(
     logger.debug('Token verification failed', {
       error: err instanceof Error ? err.message : String(err),
     });
-    res.status(401).json({ error: 'Invalid or expired token' });
+    throw new AppError(401,"Invalid or expired token")
   }
 }

@@ -21,6 +21,7 @@ export function signAccessToken(payload: JWTPayload): string {
     } as jwt.SignOptions);
 }
 
+
 export function signRefreshToken(payload: JWTPayload): string {
     return jwt.sign({ ...payload, type: 'refresh' } as RefreshTokenPayload, refreshSecret, {
         expiresIn: config.JWT_REFRESH_EXPIRES_IN,
