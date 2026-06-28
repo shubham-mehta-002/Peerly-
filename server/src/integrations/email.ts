@@ -1,7 +1,7 @@
 import nodemailer from 'nodemailer';
 import { config } from '../config';
-import { AppError } from './errors';
-import { logger } from './logger';
+import { AppError } from '../shared/errors';
+import { logger } from '../shared/logger';
 
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',

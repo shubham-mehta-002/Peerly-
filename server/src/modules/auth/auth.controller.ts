@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import * as authService from './auth.service';
-import { logger } from '../../lib/logger';
+import { logger } from '../../shared/logger';
 
 // Register a new user account.
 export async function register(req: Request, res: Response): Promise<void> {

@@ -1,12 +1,12 @@
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { config } from '../../config';
-import { sendOTPEmail, sendPasswordResetEmail } from '../../lib/email';
-import { AppError } from '../../lib/errors';
-import { JWTPayload, signRefreshToken, verifyRefreshToken } from '../../lib/jwt';
-import { logger } from '../../lib/logger';
-import redis from '../../lib/redis';
-import { supabase } from '../../lib/supabase';
+import { sendOTPEmail, sendPasswordResetEmail } from '../../integrations/email';
+import { AppError } from '../../shared/errors';
+import { JWTPayload, signRefreshToken, verifyRefreshToken } from '../../integrations/jwt';
+import { logger } from '../../shared/logger';
+import redis from '../../integrations/redis';
+import { supabase } from '../../integrations/supabase';
 import {
   buildAuthResponse,
   extractDomain,

@@ -1,6 +1,6 @@
-import { supabase } from '../../lib/supabase';
-import { AppError } from '../../lib/errors';
-import { logger } from '../../lib/logger';
+import { supabase } from '../../integrations/supabase';
+import { AppError } from '../../shared/errors';
+import { logger } from '../../shared/logger';
 import { CreatePostBody, FeedQuery, UserPostsQuery, PostResponse } from './posts.types';
 import { POST_SELECT, buildPostResponse, computeHeatScore, fetchPostInteractions, getFeedType } from './posts.util';
 

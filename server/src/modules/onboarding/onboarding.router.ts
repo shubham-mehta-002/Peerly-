@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
-import { validateBody } from '../../lib/validator';
+import { validateBody } from '../../shared/validator';
 import { completeOnboardingSchema } from './onboarding.types';
 import * as controller from './onboarding.controller';
 

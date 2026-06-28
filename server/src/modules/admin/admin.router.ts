@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { requireAdmin } from '../../middleware/requireAdmin';
-import { validateBody } from '../../lib/validator';
+import { validateBody } from '../../shared/validator';
 import {
   createCollegeSchema, updateCollegeSchema,
   createDomainSchema, updateDomainSchema,

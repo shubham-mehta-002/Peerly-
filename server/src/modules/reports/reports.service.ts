@@ -1,5 +1,5 @@
-import { supabase } from '../../lib/supabase';
-import { AppError } from '../../lib/errors';
+import { supabase } from '../../integrations/supabase';
+import { AppError } from '../../shared/errors';
 import type { ReportReason, PostReportSummary, AdminReportsQuery } from './reports.types';
 
 export async function createReport(

@@ -1,9 +1,9 @@
 import crypto from 'crypto';
 import { config } from '../../config';
-import { AppError } from '../../lib/errors';
-import { JWTPayload, signAccessToken } from '../../lib/jwt';
-import { logger } from '../../lib/logger';
-import { supabase } from '../../lib/supabase';
+import { AppError } from '../../shared/errors';
+import { JWTPayload, signAccessToken } from '../../integrations/jwt';
+import { logger } from '../../shared/logger';
+import { supabase } from '../../integrations/supabase';
 
 export function hashToken(token: string): string {
     return crypto.createHash('sha256').update(token).digest('hex');

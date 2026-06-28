@@ -1,5 +1,5 @@
-import { supabase } from '../../lib/supabase';
-import { AppError } from '../../lib/errors';
+import { supabase } from '../../integrations/supabase';
+import { AppError } from '../../shared/errors';
 import type { UpdateProfileInput, ProfileResponse } from './profile.types';
 
 export async function getProfile(userId: string): Promise<ProfileResponse> {

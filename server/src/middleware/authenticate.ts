@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import { verifyToken, JWTPayload } from '../lib/jwt';
-import { supabase } from '../lib/supabase';
-import { logger } from '../lib/logger';
-import { AppError } from '../lib/errors';
+import { verifyToken, JWTPayload } from '../integrations/jwt';
+import { supabase } from '../integrations/supabase';
+import { logger } from '../shared/logger';
+import { AppError } from '../shared/errors';
 
 declare global {
   namespace Express {

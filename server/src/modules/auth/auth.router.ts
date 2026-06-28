@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { validateBody } from '../../lib/validator';
+import { validateBody } from '../../shared/validator';
 import { authenticate } from '../../middleware/authenticate';
 import * as controller from './auth.controller';
 import {

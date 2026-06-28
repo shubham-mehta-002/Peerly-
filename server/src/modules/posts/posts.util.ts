@@ -1,4 +1,4 @@
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../integrations/supabase';
 import { DisplayAuthor, PostResponse } from './posts.types';
 
 export const POST_SELECT = `

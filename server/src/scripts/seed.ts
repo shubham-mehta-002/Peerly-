@@ -1,7 +1,7 @@
 import { config } from '../config';
 import bcrypt from 'bcryptjs';
-import { supabase } from '../lib/supabase';
-import { logger } from '../lib/logger';
+import { supabase } from '../integrations/supabase';
+import { logger } from '../shared/logger';
 
 const ADMIN_EMAIL = config.SEED_ADMIN_EMAIL;
 const ADMIN_PASSWORD = config.SEED_ADMIN_PASSWORD;

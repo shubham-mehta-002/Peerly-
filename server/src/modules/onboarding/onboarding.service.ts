@@ -1,7 +1,7 @@
-import { supabase } from '../../lib/supabase';
-import { AppError } from '../../lib/errors';
-import { signToken } from '../../lib/jwt';
-import { logger } from '../../lib/logger';
+import { supabase } from '../../integrations/supabase';
+import { AppError } from '../../shared/errors';
+import { signToken } from '../../integrations/jwt';
+import { logger } from '../../shared/logger';
 import { extractDomain } from '../auth/auth.utils';
 import { CompleteOnboardingBody } from './onboarding.types';
 

@@ -1,6 +1,6 @@
-import { supabase } from '../../lib/supabase';
-import { AppError } from '../../lib/errors';
-import { logger } from '../../lib/logger';
+import { supabase } from '../../integrations/supabase';
+import { AppError } from '../../shared/errors';
+import { logger } from '../../shared/logger';
 
 export async function createCollege(name: string) {
   const { data, error } = await supabase

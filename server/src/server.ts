@@ -1,13 +1,15 @@
 import http from 'http';
 import { config } from './config';
-import { logger } from './lib/logger';
+import { logger } from './shared/logger';
 import app from './app';
+import { createGateway } from './modules/gateway/gateway';
 
 const httpServer = http.createServer(app);
 
 httpServer.listen(config.PORT, () => {
   logger.info('Server started', { port: config.PORT, env: config.NODE_ENV });
 });
+createGateway(httpServer);
 
 function shutdown(signal: string) {
   logger.info(`${signal} received, shutting down gracefully`);
