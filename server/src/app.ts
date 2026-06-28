@@ -6,7 +6,7 @@ import { rateLimit } from 'express-rate-limit';
 import { config } from './config';
 import { logger } from './lib/logger';
 import { AppError } from './lib/errors';
-
+import authRouter from "./modules/auth/auth.router";
 
 const app = express();
 
@@ -46,7 +46,7 @@ const authLimiter = rateLimit({
 });
 
 // Routes
-
+app.use('/api/auth', authLimiter, authRouter);
 
 
 

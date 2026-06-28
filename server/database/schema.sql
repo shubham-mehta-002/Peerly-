@@ -30,8 +30,10 @@ create table if not exists users (
   email text unique not null,
   password_hash text not null,
   is_admin boolean not null default false,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  is_email_verified boolean not null default false
 );
+
 
 create table if not exists profiles (
   id uuid primary key references users(id) on delete cascade,
@@ -109,7 +111,7 @@ create table if not exists communities (
   id           uuid primary key default gen_random_uuid(),
   name         text not null,
   description  text,
-  category     text not null
+  category     text not null,
   is_global    boolean not null default false,
   campus_id    uuid not null references campuses(id) on delete cascade,
   created_by   uuid not null references profiles(id),

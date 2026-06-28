@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import * as authService from './auth.service';
+import { logger } from '../../lib/logger';
 
 // Register a new user account.
 export async function register(req: Request, res: Response): Promise<void> {
@@ -12,6 +13,7 @@ export async function register(req: Request, res: Response): Promise<void> {
 // Authenticate an existing user and return access and refresh tokens.
 export async function login(req: Request, res: Response): Promise<void> {
   const { email, password } = req.body;
+  console.log({email, password})
 
   const result = await authService.login(email, password);
   res.json(result);
