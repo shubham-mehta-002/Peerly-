@@ -2,21 +2,14 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Input } from '@/components/common';
-import { useLogin, useRegister, useVerifyEmail, useResendOTP, useGoogleAuth, useCheckDomain, type DomainCheckResult } from '@/lib/hooks/useAuth';
-
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        id: {
-          initialize: (config: { client_id: string; callback: (r: { credential: string }) => void; auto_select?: boolean }) => void;
-          renderButton: (el: HTMLElement, opts: Record<string, unknown>) => void;
-        };
-      };
-    };
-  }
-}
+import { Button } from '@/components/ui/button';
+import { FormInput } from '@/components/ui/form-input';
+import { ErrorMessage } from '@/components/ui/error-message';
+import {
+  useLogin, useRegister, useVerifyEmail, useResendOTP,
+  useCheckDomain, type DomainCheckResult,
+} from '@/lib/hooks/useAuth';
+import type { ApiError } from '@/lib/types';
 
 const PASSWORD_RULES = [
   { label: 'At least 8 characters', test: (p: string) => p.length >= 8 },
@@ -30,21 +23,18 @@ function PasswordStrength({ password }: { password: string }) {
   if (!password) return null;
   const passed = PASSWORD_RULES.filter(r => r.test(password)).length;
   const color = passed <= 2 ? '#C0392B' : passed <= 3 ? '#E67E22' : passed <= 4 ? '#F1C40F' : '#27AE60';
-
   return (
-    <div style={{ marginTop: -8 }}>
-      <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
+    <div className="-mt-2">
+      <div className="flex gap-1 mb-1.5">
         {PASSWORD_RULES.map((_, i) => (
-          <div key={i} style={{
-            flex: 1, height: 3, borderRadius: 2,
-            background: i < passed ? color : 'var(--border)',
-            transition: 'background .2s',
-          }} />
+          <div key={i} className="flex-1 h-[3px] rounded-sm transition-colors duration-200"
+            style={{ background: i < passed ? color : 'var(--border)' }} />
         ))}
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px 12px' }}>
+      <div className="flex flex-wrap gap-x-3 gap-y-0.5">
         {PASSWORD_RULES.map(r => (
-          <span key={r.label} style={{ fontSize: 11, color: r.test(password) ? '#27AE60' : 'var(--muted)' }}>
+          <span key={r.label} className="text-[11px]"
+            style={{ color: r.test(password) ? '#27AE60' : 'var(--muted)' }}>
             {r.test(password) ? '✓' : '○'} {r.label}
           </span>
         ))}
@@ -62,37 +52,29 @@ function DomainChecker({ email }: { email: string }) {
   useEffect(() => {
     const domain = email.split('@')[1];
     if (!domain || domain.length < 3 || domain === lastChecked.current) return;
-
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(async () => {
       lastChecked.current = domain;
-      try {
-        const data = await checkDomain.mutateAsync(email);
-        setResult(data);
-      } catch {
-        setResult(null);
-      }
+      try { setResult(await checkDomain.mutateAsync(email)); }
+      catch { setResult(null); }
     }, 600);
-
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [email]);
 
   if (!email.includes('@') || !email.split('@')[1]) {
     return (
-      <div style={{ padding: '10px 14px', background: 'var(--background)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>
+      <div className="px-3.5 py-2.5 rounded-lg text-[13px] leading-relaxed border border-[var(--border)] bg-[var(--background)] text-[var(--muted)]">
         Enter your college email above to check if your institution is supported.
       </div>
     );
   }
-
   if (checkDomain.isPending) {
     return (
-      <div style={{ padding: '10px 14px', background: 'var(--background)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--muted)' }}>
+      <div className="px-3.5 py-2.5 rounded-lg text-[13px] border border-[var(--border)] bg-[var(--background)] text-[var(--muted)]">
         Checking domain…
       </div>
     );
   }
-
   if (!result) return null;
 
   const configs: Record<string, { bg: string; border: string; color: string; icon: string; text: string }> = {
@@ -101,168 +83,88 @@ function DomainChecker({ email }: { email: string }) {
     not_found: { bg: 'rgba(192,57,43,.08)', border: '#C0392B', color: '#C0392B', icon: '✗', text: `@${result.domain} is not a whitelisted domain` },
     invalid: { bg: 'rgba(192,57,43,.08)', border: '#C0392B', color: '#C0392B', icon: '✗', text: 'Invalid email format' },
   };
-
   const cfg = configs[result.status];
   if (!cfg) return null;
-
   return (
-    <div style={{ padding: '10px 14px', background: cfg.bg, border: `1px solid ${cfg.border}`, borderRadius: 8, fontSize: 13, color: cfg.color, lineHeight: 1.5 }}>
+    <div className="px-3.5 py-2.5 rounded-lg text-[13px] leading-relaxed"
+      style={{ background: cfg.bg, border: `1px solid ${cfg.border}`, color: cfg.color }}>
       {cfg.icon} {cfg.text}
     </div>
   );
 }
 
-
 export default function LoginPage() {
   const [tab, setTab] = useState<'login' | 'signup'>('login');
   const [step, setStep] = useState<'auth' | 'otp'>('auth');
   const [pendingEmail, setPendingEmail] = useState('');
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [otp, setOtp] = useState('');
-
   const router = useRouter();
+
   const login = useLogin();
   const register = useRegister();
-  const verifyEmail = useVerifyEmail();
-  const resendOTP = useResendOTP();
-  const googleAuth = useGoogleAuth();
-
-  const googleInitialized = useRef(false);
-  const [googleReady, setGoogleReady] = useState(false);
-  const googleLoginBtnRef = useRef<HTMLDivElement>(null);
-  const googleSignupBtnRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (googleInitialized.current) return;
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (!clientId) return;
-
-    const script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.onload = () => {
-      window.google?.accounts.id.initialize({
-        client_id: clientId,
-        callback: (response) => { googleAuth.mutate(response.credential); },
-        auto_select: false,
-      });
-      googleInitialized.current = true;
-      setGoogleReady(true);
-    };
-    document.head.appendChild(script);
-    return () => { document.head.removeChild(script); };
-  }, []);
-
-  useEffect(() => {
-    if (!googleReady) return;
-    const ref = tab === 'login' ? googleLoginBtnRef : googleSignupBtnRef;
-    if (!ref.current) return;
-    window.google?.accounts.id.renderButton(ref.current, {
-      theme: 'outline',
-      size: 'large',
-      width: String(ref.current.offsetWidth || 344),
-    });
-  }, [googleReady, tab]);
+  const verify = useVerifyEmail();
+  const resend = useResendOTP();
 
   const handleTabSwitch = (t: 'login' | 'signup') => {
-    setTab(t);
-    login.reset();
-    register.reset();
-    googleAuth.reset();
+    setTab(t); login.reset(); register.reset();
   };
-
   const handleEmailChange = (v: string) => {
     setEmail(v);
     if (login.error) login.reset();
     if (register.error) register.reset();
   };
 
-  const handlePasswordChange = (v: string) => {
-    setPassword(v);
-    if (login.error) login.reset();
-  };
-
-  const handleLogin = () => {
-    if (!email || !password) return;
-    login.mutate({ email, password });
-  };
-
-  const handleRegister = () => {
-    if (!email || !password || password !== confirmPassword) return;
-    register.mutate({ email, password }, {
-      onSuccess: data => {
-        setPendingEmail(data.email);
-        setStep('otp');
-      },
-    });
-  };
-
-  const handleVerify = () => {
-    if (otp.length !== 6) return;
-    verifyEmail.mutate({ email: pendingEmail, otp });
-  };
-
-  const handleResend = () => {
-    resendOTP.mutate(pendingEmail);
-  };
-
-  type ApiError = Error & { response?: { data?: { error?: string } } };
   const getError = (mut: { error: unknown }) => {
     const e = mut.error as ApiError | null;
     return e?.response?.data?.error ?? e?.message ?? null;
   };
-
   const loginError = getError(login);
   const registerError = getError(register);
-  const verifyError = getError(verifyEmail);
-  const googleError = getError(googleAuth);
+  const verifyError = getError(verify);
 
   if (step === 'otp') {
     return (
-      <div style={{ minHeight: '100vh', background: 'var(--background)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
-        <div style={{ marginBottom: 48, textAlign: 'center' }}>
-          <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--foreground)', letterSpacing: '-0.5px', marginBottom: 6 }}>Peerly</div>
-          <div style={{ fontSize: 14, color: 'var(--muted)' }}>Your campus, your community.</div>
+      <div className="min-h-screen bg-[var(--background)] flex flex-col items-center justify-center px-6 py-10">
+        <div className="mb-12 text-center">
+          <div className="text-[28px] font-bold text-[var(--foreground)] tracking-tight mb-1.5">Peerly</div>
+          <div className="text-sm text-[var(--muted)]">Your campus, your community.</div>
         </div>
-
-        <div style={{ width: '100%', maxWidth: 400, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, padding: '28px 28px' }}>
-          <h2 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 600, color: 'var(--foreground)' }}>Verify your email</h2>
-          <p style={{ margin: '0 0 24px', fontSize: 13, color: 'var(--muted)', lineHeight: 1.6 }}>
+        <div className="w-full max-w-[400px] bg-[var(--card)] border border-[var(--border)] rounded-xl px-7 py-7">
+          <h2 className="text-[18px] font-semibold text-[var(--foreground)] mb-2">Verify your email</h2>
+          <p className="text-[13px] text-[var(--muted)] leading-relaxed mb-6">
             We sent a 6-digit code to <strong>{pendingEmail}</strong>. Enter it below to activate your account.
           </p>
-
-          {verifyError && (
-            <div style={{ padding: '10px 14px', background: 'rgba(192,57,43,.08)', border: '1px solid #C0392B', borderRadius: 8, fontSize: 13, color: '#C0392B', marginBottom: 16 }}>
-              {verifyError}
-            </div>
-          )}
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Input
+          <ErrorMessage message={verifyError} />
+          <div className="flex flex-col gap-4 mt-4">
+            <FormInput
               label="Verification code"
               placeholder="000000"
               value={otp}
-              onChange={e => { setOtp(e.target.value); if (verifyEmail.error) verifyEmail.reset(); }}
+              onChange={e => { setOtp((e.target as HTMLInputElement).value); if (verify.error) verify.reset(); }}
             />
-            <Button onClick={handleVerify} disabled={verifyEmail.isPending || otp.length !== 6} style={{ width: '100%', justifyContent: 'center' }}>
-              {verifyEmail.isPending ? 'Verifying…' : 'Verify email'}
+            <Button
+              onClick={() => { if (otp.length === 6) verify.mutate({ email: pendingEmail, otp }); }}
+              disabled={verify.isPending || otp.length !== 6}
+              className="w-full justify-center"
+            >
+              {verify.isPending ? 'Verifying…' : 'Verify email'}
             </Button>
-            <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--muted)' }}>
-              Didn't receive it?{' '}
+            <div className="text-center text-[13px] text-[var(--muted)]">
+              Didn&apos;t receive it?{' '}
               <button
-                onClick={handleResend}
-                disabled={resendOTP.isPending}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent)', fontFamily: 'inherit', fontSize: 13, padding: 0 }}
+                onClick={() => resend.mutate(pendingEmail)}
+                disabled={resend.isPending}
+                className="bg-transparent border-none cursor-pointer text-[var(--accent)] text-[13px] p-0 font-[inherit]"
               >
-                {resendOTP.isPending ? 'Sending…' : resendOTP.isSuccess ? 'Sent!' : 'Resend code'}
+                {resend.isPending ? 'Sending…' : resend.isSuccess ? 'Sent!' : 'Resend code'}
               </button>
             </div>
             <button
-              onClick={() => { setStep('auth'); setOtp(''); verifyEmail.reset(); }}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontFamily: 'inherit', fontSize: 13, padding: 0, textAlign: 'center' }}
+              onClick={() => { setStep('auth'); setOtp(''); verify.reset(); }}
+              className="bg-transparent border-none cursor-pointer text-[var(--muted)] text-[13px] p-0 text-center font-[inherit]"
             >
               ← Back to sign in
             </button>
@@ -273,115 +175,120 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--background)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
-      <div style={{ marginBottom: 48, textAlign: 'center' }}>
-        <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--foreground)', letterSpacing: '-0.5px', marginBottom: 6 }}>Peerly</div>
-        <div style={{ fontSize: 14, color: 'var(--muted)' }}>Your campus, your community.</div>
+    <div className="min-h-screen bg-[var(--background)] flex flex-col items-center justify-center px-6 py-10">
+      <div className="mb-12 text-center">
+        <div className="text-[28px] font-bold text-[var(--foreground)] tracking-tight mb-1.5">Peerly</div>
+        <div className="text-sm text-[var(--muted)]">Your campus, your community.</div>
       </div>
 
-      <div style={{ width: '100%', maxWidth: 400, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--border)' }}>
+      <div className="w-full max-w-[400px] bg-[var(--card)] border border-[var(--border)] rounded-xl overflow-hidden">
+        {/* Tabs */}
+        <div className="flex border-b border-[var(--border)]">
           {(['login', 'signup'] as const).map(t => (
-            <button key={t} onClick={() => handleTabSwitch(t)} style={{
-              flex: 1, padding: 14, background: 'none', border: 'none', cursor: 'pointer',
-              fontFamily: 'inherit', fontSize: 14, fontWeight: tab === t ? 600 : 400,
-              color: tab === t ? 'var(--foreground)' : 'var(--muted)',
-              borderBottom: tab === t ? '2px solid var(--accent)' : '2px solid transparent',
-              transition: 'all .15s', marginBottom: -1,
-            }}>
+            <button key={t} onClick={() => handleTabSwitch(t)}
+              className="flex-1 py-3.5 bg-transparent border-none cursor-pointer font-[inherit] text-sm transition-all duration-150"
+              style={{
+                fontWeight: tab === t ? 600 : 400,
+                color: tab === t ? 'var(--foreground)' : 'var(--muted)',
+                borderBottom: tab === t ? '2px solid var(--accent)' : '2px solid transparent',
+                marginBottom: -1,
+              }}>
               {t === 'login' ? 'Sign in' : 'Create account'}
             </button>
           ))}
         </div>
 
-        <div style={{ padding: '28px 28px' }}>
-          {(loginError || registerError || googleError) && (
-            <div style={{ padding: '10px 14px', background: 'rgba(192,57,43,.08)', border: '1px solid #C0392B', borderRadius: 8, fontSize: 13, color: '#C0392B', marginBottom: 16 }}>
-              {loginError || registerError || googleError}
+        <div className="px-7 py-7">
+          {tab === 'login' ? (
+            <div className="flex flex-col gap-4">
+              <ErrorMessage message={loginError} />
               {loginError?.includes('verify your email') && (
                 <button
                   onClick={() => { setPendingEmail(email); setStep('otp'); login.reset(); }}
-                  style={{ display: 'block', marginTop: 6, background: 'none', border: 'none', cursor: 'pointer', color: '#C0392B', fontFamily: 'inherit', fontSize: 12, padding: 0, textDecoration: 'underline' }}
+                  className="-mt-2 text-left bg-transparent border-none cursor-pointer text-[var(--accent)] font-[inherit] text-xs p-0 underline underline-offset-2"
                 >
                   Verify email now →
                 </button>
               )}
-            </div>
-          )}
-
-          {tab === 'login' ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <Input label="College email" placeholder="yourname@thapar.edu" type="email" value={email} onChange={e => handleEmailChange(e.target.value)} />
-              <Input label="Password" placeholder="••••••••" type="password" showToggle value={password} onChange={e => handlePasswordChange(e.target.value)} />
-              <div style={{ textAlign: 'right', marginTop: -8 }}>
-                <button onClick={() => router.push('/auth/forgot-password')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--accent)', fontFamily: 'inherit', padding: 0 }}>
+              <FormInput
+                label="College email"
+                placeholder="yourname@thapar.edu"
+                type="email"
+                value={email}
+                onChange={e => handleEmailChange((e.target as HTMLInputElement).value)}
+              />
+              <FormInput
+                label="Password"
+                placeholder="••••••••"
+                type="password"
+                showToggle
+                value={password}
+                onChange={e => { setPassword((e.target as HTMLInputElement).value); if (login.error) login.reset(); }}
+              />
+              <div className="text-right -mt-2">
+                <button
+                  onClick={() => router.push('/auth/forgot-password')}
+                  className="bg-transparent border-none cursor-pointer text-[13px] text-[var(--accent)] font-[inherit] p-0"
+                >
                   Forgot password?
                 </button>
               </div>
-              <Button onClick={handleLogin} disabled={login.isPending || !email || !password} style={{ width: '100%', justifyContent: 'center', marginTop: 4 }}>
+              <Button
+                onClick={() => { if (email && password) login.mutate({ email, password }); }}
+                disabled={login.isPending || !email || !password}
+                className="w-full justify-center mt-1"
+              >
                 {login.isPending ? 'Signing in…' : 'Sign in'}
               </Button>
-              {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
-                <>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '4px 0' }}>
-                    <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-                    <span style={{ fontSize: 12, color: 'var(--muted)' }}>or</span>
-                    <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-                  </div>
-                  {!googleReady ? (
-                    <div style={{ width: '100%', height: 40, borderRadius: 6, background: 'var(--card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', fontSize: 13, opacity: 0.6 }}>
-                      Continue with Google
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-                      <div ref={googleLoginBtnRef} />
-                    </div>
-                  )}
-                </>
-              )}
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <Input label="College email" placeholder="yourname@thapar.edu" type="email" value={email} onChange={e => handleEmailChange(e.target.value)} />
+            <div className="flex flex-col gap-4">
+              <ErrorMessage message={registerError} />
+              <FormInput
+                label="College email"
+                placeholder="yourname@thapar.edu"
+                type="email"
+                value={email}
+                onChange={e => handleEmailChange((e.target as HTMLInputElement).value)}
+              />
               <DomainChecker email={email} />
-              <Input label="Password" placeholder="Min. 8 characters" type="password" showToggle value={password} onChange={e => setPassword(e.target.value)} />
+              <FormInput
+                label="Password"
+                placeholder="Min. 8 characters"
+                type="password"
+                showToggle
+                value={password}
+                onChange={e => setPassword((e.target as HTMLInputElement).value)}
+              />
               <PasswordStrength password={password} />
-              <Input
+              <FormInput
                 label="Confirm password"
                 placeholder="••••••••"
                 type="password"
                 showToggle
                 value={confirmPassword}
-                onChange={e => setConfirmPassword(e.target.value)}
+                onChange={e => setConfirmPassword((e.target as HTMLInputElement).value)}
                 error={confirmPassword && password !== confirmPassword ? "Passwords don't match" : ''}
               />
-              <Button onClick={handleRegister} disabled={register.isPending || !email || !password || password !== confirmPassword} style={{ width: '100%', justifyContent: 'center', marginTop: 4 }}>
+              <Button
+                onClick={() => {
+                  if (email && password && password === confirmPassword) {
+                    register.mutate({ email, password }, {
+                      onSuccess: data => { setPendingEmail(data.email); setStep('otp'); },
+                    });
+                  }
+                }}
+                disabled={register.isPending || !email || !password || password !== confirmPassword}
+                className="w-full justify-center mt-1"
+              >
                 {register.isPending ? 'Creating account…' : 'Create account'}
               </Button>
-              {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
-                <>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '4px 0' }}>
-                    <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-                    <span style={{ fontSize: 12, color: 'var(--muted)' }}>or</span>
-                    <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-                  </div>
-                  {!googleReady ? (
-                    <div style={{ width: '100%', height: 40, borderRadius: 6, background: 'var(--card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', fontSize: 13, opacity: 0.6 }}>
-                      Continue with Google
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-                      <div ref={googleSignupBtnRef} />
-                    </div>
-                  )}
-                </>
-              )}
             </div>
           )}
         </div>
       </div>
 
-      <p style={{ marginTop: 28, fontSize: 12, color: 'var(--muted)', textAlign: 'center', lineHeight: 1.6, maxWidth: 320 }}>
+      <p className="mt-7 text-xs text-[var(--muted)] text-center leading-relaxed max-w-[320px]">
         By signing up you agree to our Terms of Service. Peerly is exclusively for students of whitelisted institutions.
       </p>
     </div>

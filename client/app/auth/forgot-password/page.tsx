@@ -2,9 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/common/Button';
-import { Input } from '@/components/common';
+import { Button } from '@/components/ui/button';
+import { FormInput } from '@/components/ui/form-input';
+import { ErrorMessage } from '@/components/ui/error-message';
 import { useForgotPassword } from '@/lib/hooks/useAuth';
+import type { ApiError } from '@/lib/types';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -12,41 +14,66 @@ export default function ForgotPasswordPage() {
   const router = useRouter();
   const forgot = useForgotPassword();
 
+  const errorMsg = forgot.error
+    ? ((forgot.error as ApiError).response?.data?.error ?? (forgot.error as ApiError).message)
+    : null;
+
   const handleSend = () => {
     if (!email.trim()) return;
     forgot.mutate({ email }, { onSuccess: () => setSent(true) });
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--background)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
-      <div style={{ width: '100%', maxWidth: 400 }}>
-        <button onClick={() => router.push('/auth/login')} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, color: 'var(--muted)', padding: 0, marginBottom: 36 }}>
+    <div className="min-h-screen bg-[var(--background)] flex flex-col items-center justify-center px-6 py-10">
+      <div className="w-full max-w-[400px]">
+        <button
+          onClick={() => router.push('/auth/login')}
+          className="flex items-center gap-1.5 bg-transparent border-none cursor-pointer font-[inherit] text-[13px] text-[var(--muted)] p-0 mb-9"
+        >
           ← Back to sign in
         </button>
 
         {!sent ? (
           <>
-            <div style={{ marginBottom: 28 }}>
-              <h1 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 600, color: 'var(--foreground)', letterSpacing: '-0.3px' }}>Reset your password</h1>
-              <p style={{ margin: 0, fontSize: 14, color: 'var(--muted)', lineHeight: 1.6 }}>Enter your college email and we'll send a reset link.</p>
+            <div className="mb-7">
+              <h1 className="text-[22px] font-semibold text-[var(--foreground)] tracking-tight mb-2">Reset your password</h1>
+              <p className="text-sm text-[var(--muted)] leading-relaxed">
+                Enter your college email and we&apos;ll send a reset link.
+              </p>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <Input label="College email" placeholder="yourname@thapar.edu" type="email" value={email} onChange={e => setEmail(e.target.value)} />
-              <Button disabled={!email.trim() || forgot.isPending} onClick={handleSend} style={{ width: '100%', justifyContent: 'center' }}>
+            <div className="flex flex-col gap-4">
+              <ErrorMessage message={errorMsg} />
+              <FormInput
+                label="College email"
+                placeholder="yourname@thapar.edu"
+                type="email"
+                value={email}
+                onChange={e => setEmail((e.target as HTMLInputElement).value)}
+              />
+              <Button
+                disabled={!email.trim() || forgot.isPending}
+                onClick={handleSend}
+                className="w-full justify-center"
+              >
                 {forgot.isPending ? 'Sending…' : 'Send reset link'}
               </Button>
             </div>
           </>
         ) : (
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, margin: '0 auto 20px' }}>✉</div>
-            <h1 style={{ margin: '0 0 10px', fontSize: 20, fontWeight: 600, color: 'var(--foreground)', letterSpacing: '-0.3px' }}>Check your inbox</h1>
-            <p style={{ margin: '0 0 24px', fontSize: 14, color: 'var(--muted)', lineHeight: 1.65 }}>
-              We sent a reset link to <strong style={{ color: 'var(--foreground)' }}>{email}</strong>. Expires in 60 minutes.
+          <div className="text-center">
+            <div className="w-14 h-14 rounded-full bg-[var(--card)] border border-[var(--border)] flex items-center justify-center text-2xl mx-auto mb-5">✉</div>
+            <h1 className="text-[20px] font-semibold text-[var(--foreground)] tracking-tight mb-2.5">Check your inbox</h1>
+            <p className="text-sm text-[var(--muted)] leading-relaxed mb-6">
+              We sent a reset link to <strong className="text-[var(--foreground)]">{email}</strong>. Expires in 60 minutes.
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <Button variant="secondary" onClick={() => setSent(false)} style={{ width: '100%', justifyContent: 'center' }}>Resend email</Button>
-              <button onClick={() => router.push('/auth/login')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, color: 'var(--muted)', textDecoration: 'underline', textUnderlineOffset: 3 }}>
+            <div className="flex flex-col gap-2.5">
+              <Button variant="secondary" onClick={() => setSent(false)} className="w-full justify-center">
+                Resend email
+              </Button>
+              <button
+                onClick={() => router.push('/auth/login')}
+                className="bg-transparent border-none cursor-pointer font-[inherit] text-[13px] text-[var(--muted)] underline underline-offset-[3px]"
+              >
                 Back to sign in
               </button>
             </div>

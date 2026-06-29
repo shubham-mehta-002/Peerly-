@@ -2,8 +2,11 @@
 
 import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Button, Input } from '@/components/common';
+import { Button } from '@/components/ui/button';
+import { FormInput } from '@/components/ui/form-input';
+import { ErrorMessage } from '@/components/ui/error-message';
 import { useResetPassword } from '@/lib/hooks/useAuth';
+import type { ApiError } from '@/lib/types';
 
 function ResetPasswordForm() {
   const [password, setPassword] = useState('');
@@ -15,34 +18,57 @@ function ResetPasswordForm() {
   const mismatch = confirm.length > 0 && password !== confirm;
   const weak = password.length > 0 && password.length < 8;
   const strength = password.length === 0 ? 0 : password.length < 8 ? 1 : password.length < 12 ? 2 : 3;
-  const strengthLabel = ['', 'Weak', 'Good', 'Strong'];
   const strengthColor = ['', '#C0392B', '#E67E22', 'var(--accent)'];
+  const strengthLabel = ['', 'Weak', 'Good', 'Strong'];
+
+  const errorMsg = reset.error
+    ? ((reset.error as ApiError).response?.data?.error ?? 'Reset failed')
+    : null;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {!token && (
-        <div style={{ padding: '10px 14px', background: 'rgba(192,57,43,.08)', border: '1px solid #C0392B', borderRadius: 8, fontSize: 13, color: '#C0392B' }}>
-          Invalid reset link. Request a new one.
-        </div>
-      )}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <Input label="New password" type="password" placeholder="Min. 8 characters" value={password} onChange={e => setPassword(e.target.value)} error={weak ? 'At least 8 characters' : ''} />
+    <div className="flex flex-col gap-4">
+      {!token && <ErrorMessage message="Invalid reset link. Request a new one." />}
+
+      <div className="flex flex-col gap-2">
+        <FormInput
+          label="New password"
+          type="password"
+          showToggle
+          placeholder="Min. 8 characters"
+          value={password}
+          onChange={e => setPassword((e.target as HTMLInputElement).value)}
+          error={weak ? 'At least 8 characters' : ''}
+        />
         {password.length > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ flex: 1, display: 'flex', gap: 3 }}>
+          <div className="flex items-center gap-2.5">
+            <div className="flex-1 flex gap-1">
               {[1, 2, 3].map(i => (
-                <div key={i} style={{ flex: 1, height: 3, borderRadius: 99, background: i <= strength ? strengthColor[strength] : 'var(--border)', transition: 'background .2s' }} />
+                <div key={i} className="flex-1 h-[3px] rounded-full transition-colors duration-200"
+                  style={{ background: i <= strength ? strengthColor[strength] : 'var(--border)' }} />
               ))}
             </div>
-            <span style={{ fontSize: 12, color: strengthColor[strength], fontWeight: 500, minWidth: 40 }}>{strengthLabel[strength]}</span>
+            <span className="text-xs font-medium min-w-[40px]" style={{ color: strengthColor[strength] }}>
+              {strengthLabel[strength]}
+            </span>
           </div>
         )}
       </div>
-      <Input label="Confirm password" type="password" placeholder="••••••••" value={confirm} onChange={e => setConfirm(e.target.value)} error={mismatch ? "Passwords don't match" : ''} />
-      {reset.error && (
-        <div style={{ fontSize: 13, color: '#C0392B' }}>{(reset.error as Error & { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Reset failed'}</div>
-      )}
-      <Button disabled={!password || !confirm || mismatch || weak || !token || reset.isPending} onClick={() => reset.mutate({ token, newPassword: password })} style={{ width: '100%', justifyContent: 'center', marginTop: 4 }}>
+
+      <FormInput
+        label="Confirm password"
+        type="password"
+        showToggle
+        placeholder="••••••••"
+        value={confirm}
+        onChange={e => setConfirm((e.target as HTMLInputElement).value)}
+        error={mismatch ? "Passwords don't match" : ''}
+      />
+      <ErrorMessage message={errorMsg} />
+      <Button
+        disabled={!password || !confirm || mismatch || weak || !token || reset.isPending}
+        onClick={() => reset.mutate({ token, newPassword: password })}
+        className="w-full justify-center mt-1"
+      >
         {reset.isPending ? 'Saving…' : 'Set new password'}
       </Button>
     </div>
@@ -51,13 +77,13 @@ function ResetPasswordForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--background)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
-      <div style={{ width: '100%', maxWidth: 400 }}>
-        <div style={{ marginBottom: 28 }}>
-          <h1 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 600, color: 'var(--foreground)', letterSpacing: '-0.3px' }}>Choose a new password</h1>
-          <p style={{ margin: 0, fontSize: 14, color: 'var(--muted)', lineHeight: 1.6 }}>Min. 8 characters.</p>
+    <div className="min-h-screen bg-[var(--background)] flex flex-col items-center justify-center px-6 py-10">
+      <div className="w-full max-w-[400px]">
+        <div className="mb-7">
+          <h1 className="text-[22px] font-semibold text-[var(--foreground)] tracking-tight mb-2">Choose a new password</h1>
+          <p className="text-sm text-[var(--muted)] leading-relaxed">Min. 8 characters.</p>
         </div>
-        <Suspense fallback={<div style={{ color: 'var(--muted)' }}>Loading…</div>}>
+        <Suspense fallback={<div className="text-[var(--muted)]">Loading…</div>}>
           <ResetPasswordForm />
         </Suspense>
       </div>

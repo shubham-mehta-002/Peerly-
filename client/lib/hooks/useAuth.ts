@@ -3,7 +3,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
-import { setToken, clearToken } from '@/lib/auth-utils';
+import { setTokens, clearTokens, getRefreshToken } from '@/lib/auth-utils';
+import { disconnectSocket } from '@/lib/socket';
 
 export interface MeResponse {
   id: string;
@@ -24,10 +25,7 @@ export interface MeResponse {
 export function useMe() {
   return useQuery<MeResponse>({
     queryKey: ['me'],
-    queryFn: async () => {
-      const response = await api.get<MeResponse>('/api/auth/me');
-      return response.data;
-    },
+    queryFn: () => api.get('/api/auth/me').then(r => r.data),
     retry: false,
     staleTime: 5 * 60_000,
   });
@@ -39,9 +37,9 @@ export function useLogin() {
 
   return useMutation({
     mutationFn: (body: { email: string; password: string }) =>
-      api.post<{ token: string; onboarding_completed: boolean }>('/api/auth/login', body).then(r => r.data),
+      api.post<{ accessToken: string; refreshToken: string; onboarding_completed: boolean }>('/api/auth/login', body).then(r => r.data),
     onSuccess: data => {
-      setToken(data.token);
+      setTokens(data.accessToken, data.refreshToken);
       qc.invalidateQueries({ queryKey: ['me'] });
       router.push(data.onboarding_completed ? '/feed' : '/onboarding');
     },
@@ -61,9 +59,9 @@ export function useVerifyEmail() {
 
   return useMutation({
     mutationFn: (body: { email: string; otp: string }) =>
-      api.post<{ token: string; onboarding_completed: boolean }>('/api/auth/verify-email', body).then(r => r.data),
+      api.post<{ accessToken: string; refreshToken: string; onboarding_completed: boolean }>('/api/auth/verify-email', body).then(r => r.data),
     onSuccess: data => {
-      setToken(data.token);
+      setTokens(data.accessToken, data.refreshToken);
       qc.invalidateQueries({ queryKey: ['me'] });
       router.push('/onboarding');
     },
@@ -78,14 +76,16 @@ export function useResendOTP() {
 }
 
 export function useGoogleAuth() {
+  // Google OAuth is not yet implemented on the backend.
+  // This is a placeholder to avoid import errors in existing code.
   const router = useRouter();
   const qc = useQueryClient();
-
   return useMutation({
-    mutationFn: (idToken: string) =>
-      api.post<{ token: string; onboarding_completed: boolean }>('/api/auth/google', { idToken }).then(r => r.data),
-    onSuccess: data => {
-      setToken(data.token);
+    mutationFn: (_idToken: string): Promise<{ accessToken: string; refreshToken: string; onboarding_completed: boolean }> => {
+      return Promise.reject(new Error('Google auth is not yet supported'));
+    },
+    onSuccess: (data) => {
+      setTokens(data.accessToken, data.refreshToken);
       qc.invalidateQueries({ queryKey: ['me'] });
       router.push(data.onboarding_completed ? '/feed' : '/onboarding');
     },
@@ -108,10 +108,21 @@ export function useCheckDomain() {
 export function useLogout() {
   const router = useRouter();
   const qc = useQueryClient();
-  return () => {
-    clearToken();
-    qc.clear();
-    router.push('/auth/login');
+
+  return async () => {
+    disconnectSocket();
+    const refreshToken = getRefreshToken();
+    try {
+      if (refreshToken) {
+        await api.post('/api/auth/logout', { refreshToken });
+      }
+    } catch {
+      // fire-and-forget: ignore errors
+    } finally {
+      clearTokens();
+      qc.clear();
+      router.push('/auth/login');
+    }
   };
 }
 
@@ -143,9 +154,9 @@ export function useCompleteOnboarding() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: { name: string; username: string; bio?: string; campus_id: string }) =>
-      api.post<{ token: string; profile: unknown }>('/api/onboarding/complete', body).then(r => r.data),
+      api.post<{ accessToken: string; refreshToken: string; profile: unknown }>('/api/onboarding/complete', body).then(r => r.data),
     onSuccess: data => {
-      setToken(data.token);
+      setTokens(data.accessToken, data.refreshToken);
       qc.invalidateQueries({ queryKey: ['me'] });
       router.push('/feed');
     },
