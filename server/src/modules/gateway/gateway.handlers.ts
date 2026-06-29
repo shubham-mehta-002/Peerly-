@@ -1,5 +1,6 @@
 import type { Socket, Namespace } from 'socket.io';
 import { getMemberRole } from '../communities/communities.service';
+import { saveMessage } from '../communities/communities.service';
 import { logger } from '../../shared/logger';
 
 function getCommunityId(payload: unknown): string | null {
@@ -21,7 +22,7 @@ function isValidMessagePayload(payload: unknown): payload is { communityId: stri
 }
 
 export function registerHandlers(socket: Socket, ns: Namespace): void {
-  
+
   socket.on('join_room', async (payload: unknown) => {
     const communityId = getCommunityId(payload);
     if (!communityId) {
@@ -62,15 +63,24 @@ export function registerHandlers(socket: Socket, ns: Namespace): void {
         return;
       }
 
-      ns.to(communityId).emit('new_message', {
+      // Persist the message to DB
+      const saved = await saveMessage({
         communityId,
-        content,
-        image_url: image_url ?? null,
+        senderId: socket.data.user.userId,
+        content: content.trim(),
+        imageUrl: image_url ?? null,
+      });
+
+      ns.to(communityId).emit('new_message', {
+        id: saved.id,
+        community_id: communityId,
+        content: saved.content,
+        image_url: saved.image_url,
         sender: {
           username: socket.data.user.username,
-          avatar_url: null,
+          avatar_url: saved.sender_avatar_url,
         },
-        created_at: new Date().toISOString(),
+        created_at: saved.created_at,
         is_system: false,
       });
     } catch (err) {

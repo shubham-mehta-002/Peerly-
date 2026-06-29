@@ -41,7 +41,7 @@ export async function authenticate(
         userId: payload.userId,
         error: error.message,
       });
-      throw new AppError(401,"Invalid or expired token")
+      next(new AppError(401, 'Invalid or expired token'));
       return;
     }
 
@@ -56,6 +56,6 @@ export async function authenticate(
     logger.debug('Token verification failed', {
       error: err instanceof Error ? err.message : String(err),
     });
-    throw new AppError(401,"Invalid or expired token")
+    next(new AppError(401, 'Invalid or expired token'));
   }
 }

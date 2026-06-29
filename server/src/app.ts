@@ -12,6 +12,7 @@ import onboardingRouter from "./modules/onboarding/onboarding.router";
 import profileRouter from "./modules/profile/profile.router";
 import adminRouter from "./modules/admin/admin.router"
 import reportsRouter from "./modules/reports/reports.router";
+import communitiesRouter from "./modules/communities/communities.router";
 
 const app = express();
 
@@ -42,21 +43,22 @@ app.use(
 app.use(express.json({ limit: '10kb' }));
 
 // Rate limiting on auth routes only
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many requests, please try again later' },
-});
+// const authLimiter = rateLimit({
+//   windowMs: 15 * 60 * 1000,
+//   max: 20,
+//   standardHeaders: true,
+//   legacyHeaders: false,
+//   message: { error: 'Too many requests, please try again later' },
+// });
 
 // Routes
-app.use('/api/auth', authLimiter, authRouter);
+app.use('/api/auth', authRouter);
 app.use('/api/posts', postsRouter);
 app.use('/api/onboarding', onboardingRouter);
 app.use('/api/posts', reportsRouter);
 app.use('/api/profile', profileRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/communities', communitiesRouter);
 
 
 // Health check

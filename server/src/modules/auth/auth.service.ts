@@ -269,23 +269,23 @@ export async function verifyEmailOTP(email: string, otp: string) {
 }
 
 export async function checkDomain(email: string) {
-    const domain = extractDomain(email.toLowerCase().trim());
-    if (!domain) return { status: 'invalid' as const, domain: '' };
+  const domain = extractDomain(email.toLowerCase().trim());
+  if (!domain) return { status: 'invalid' as const, domain: '' };
 
-    const { data: domainRow } = await supabase
-        .from('college_domains')
-        .select('id, is_active, college_id, colleges(name, is_active)')
-        .eq('domain', domain)
-        .single();
+  const { data: domainRow } = await supabase
+    .from('college_domains')
+    .select('id, is_active, college_id, colleges(name, is_active)')
+    .eq('domain', domain)
+    .single();
 
-    if (!domainRow) return { status: 'not_found' as const, domain };
+  if (!domainRow) return { status: 'not_found' as const, domain };
 
-    const college = domainRow.colleges as any;
-    if (!domainRow.is_active || !college?.is_active) {
-        return { status: 'inactive' as const, domain, college_name: college?.name ?? null };
-    }
+  const college = domainRow.colleges as any;
+  if (!domainRow.is_active || !college?.is_active) {
+    return { status: 'inactive' as const, domain, college_name: college?.name ?? null };
+  }
 
-    return { status: 'active' as const, domain, college_name: college?.name ?? null };
+  return { status: 'active' as const, domain, college_name: college?.name ?? null };
 }
 
 export async function refreshAccessToken(refreshToken: string) {
@@ -344,6 +344,20 @@ export async function refreshAccessToken(refreshToken: string) {
 }
 
 // Check whether a requested username is already taken.
+export async function logout(refreshToken: string): Promise<void> {
+  try {
+    const tokenHash = hashToken(refreshToken);
+    await supabase
+      .from('refresh_tokens')
+      .update({ revoked_at: new Date().toISOString() })
+      .eq('token_hash', tokenHash);
+    logger.info('Refresh token revoked on logout');
+  } catch (err) {
+    // best-effort — don't fail logout if DB update fails
+    logger.warn('Logout token revocation failed', { error: err instanceof Error ? err.message : String(err) });
+  }
+}
+
 export async function checkUsername(username: string): Promise<{ available: boolean }> {
   const normalized = username.toLowerCase().trim();
   const { data } = await supabase

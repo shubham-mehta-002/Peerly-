@@ -1,8 +1,9 @@
 import { supabase } from '../../integrations/supabase';
 import { AppError } from '../../shared/errors';
-import { signToken } from '../../integrations/jwt';
+import { signRefreshToken, JWTPayload } from '../../integrations/jwt';
 import { logger } from '../../shared/logger';
 import { extractDomain } from '../auth/auth.utils';
+import { buildAuthResponse, storeRefreshToken } from '../auth/auth.utils';
 import { CompleteOnboardingBody } from './onboarding.types';
 
 export async function getCampusesForUser(email: string) {
@@ -101,7 +102,11 @@ export async function completeOnboarding(
 
   logger.info('Onboarding completed', { userId, campusId: body.campus_id });
 
-  const token = signToken({ userId, email, isAdmin, campusId: body.campus_id });
+  const jwtPayload: JWTPayload = { userId, email, isAdmin, campusId: body.campus_id };
+  const refreshToken = signRefreshToken(jwtPayload);
+  await storeRefreshToken(userId, refreshToken);
 
-  return { token, profile: updatedProfile };
+  const { accessToken } = buildAuthResponse(jwtPayload, { onboarding_completed: true }, refreshToken);
+
+  return { accessToken, refreshToken, profile: updatedProfile };
 }

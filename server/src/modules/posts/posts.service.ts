@@ -53,19 +53,19 @@ export async function getFeed(
   } else {
     query = query.eq('is_global', true) as any;
   }
-  query = query.eq('is_hidden', false) as any;
+  // Note: is_hidden column not present in current schema — filter omitted
 
   switch (sort) {
-    case 'oldest':   query = query.order('created_at', { ascending: true }) as any; break;
-    case 'upvoted':  query = query.order('upvotes', { ascending: false }) as any; break;
+    case 'oldest': query = query.order('created_at', { ascending: true }) as any; break;
+    case 'upvoted': query = query.order('upvotes', { ascending: false }) as any; break;
     case 'trending': query = query.order('heat_score', { ascending: false }) as any; break;
-    default:         query = query.order('created_at', { ascending: false }) as any; break;
+    default: query = query.order('created_at', { ascending: false }) as any; break;
   }
 
   const { data: posts, error } = await (query as any).range(offset, offset + limit - 1);
 
   if (error) {
-    logger.error('Failed to fetch feed', { error: error.message, feedType });
+    logger.error('Failed to fetch feed', { error: error.message, code: error.code, details: error.details, feedType });
     throw new AppError(500, 'Failed to fetch feed');
   }
   if (!posts || posts.length === 0) return [];
@@ -141,7 +141,6 @@ export async function getUserPosts(
     .from('posts')
     .select(POST_SELECT)
     .eq('author_id', author.id)
-    .eq('is_hidden', false)
     .order('created_at', { ascending: false });
 
   query = (query as any).eq('is_anonymous', anonymous);

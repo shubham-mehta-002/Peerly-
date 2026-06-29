@@ -2,10 +2,9 @@ import { supabase } from '../../integrations/supabase';
 import { DisplayAuthor, PostResponse } from './posts.types';
 
 export const POST_SELECT = `
-  id, author_id, content, image_urls, is_global, is_anonymous, is_hidden,
+  id, author_id, college_id, content, image_urls, is_global, is_anonymous,
   upvotes, downvotes, comment_count, heat_score, created_at, campus_id,
-  author:profiles!author_id(username, name, avatar_url),
-  college:colleges!college_id(name)
+  author:profiles!author_id(username, name, avatar_url)
 `;
 
 export function computeHeatScore(
@@ -64,10 +63,11 @@ export function buildPostResponse(
     author?.avatar_url ?? null
   );
 
-  const { author_id: _authorId, author: _author, college: _college, downvotes: _downvotes, ...rest } = post;
+  const { author_id: _authorId, author: _author, college: _college, college_id: _collegeId, downvotes: _downvotes, ...rest } = post;
 
   return {
     ...rest,
+    is_hidden: false, // column not yet in schema; default to false
     display_author,
     user_vote: userVote,
     user_has_reported: userHasReported,

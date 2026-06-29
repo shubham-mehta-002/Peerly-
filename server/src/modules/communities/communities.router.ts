@@ -4,7 +4,7 @@ import { validateBody } from '../../shared/validator';
 import {
   listHandler, getHandler, createHandler, updateHandler,
   deleteHandler, joinHandler, leaveHandler, kickHandler, updateRoleHandler,
-  transferOwnershipHandler, getMembersHandler,
+  transferOwnershipHandler, getMembersHandler, getMessagesHandler,
 } from './communities.controller';
 import { CreateCommunitySchema, UpdateCommunitySchema, UpdateMemberRoleSchema } from './communities.types';
 
@@ -18,6 +18,7 @@ router.patch('/:id', validateBody(UpdateCommunitySchema), updateHandler);
 router.delete('/:id', deleteHandler);
 
 router.get('/:id/members', getMembersHandler);
+router.get('/:id/messages', getMessagesHandler);
 router.post('/:id/join', joinHandler);
 router.post('/:id/leave', leaveHandler);
 router.post('/:id/transfer-ownership', transferOwnershipHandler);

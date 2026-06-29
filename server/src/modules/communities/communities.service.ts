@@ -72,7 +72,12 @@ export async function getCommunity(communityId: string, userId: string): Promise
 export async function createCommunity(input: CreateCommunityInput, userId: string, campusId: string): Promise<CommunityResponse> {
   const { data: community, error } = await supabase
     .from('communities')
-    .insert({ ...input, campus_id: input.is_global ? null : campusId, created_by: userId, member_count: 1 })
+    .insert({
+      ...input,
+      campus_id: input.is_global ? null : campusId,
+      created_by: userId,
+      member_count: 1,
+    } as Record<string, unknown>)
     .select('id, name, description, category, is_global, campus_id, member_count, created_at')
     .single();
 
@@ -261,4 +266,107 @@ export async function transferOwnership(communityId: string, currentOwnerId: str
     .update({ role: 'admin' })
     .eq('community_id', communityId)
     .eq('user_id', newOwnerId);
+}
+
+// ─── Message persistence ──────────────────────────────────────────────────────
+
+export interface SavedMessage {
+  id: string;
+  content: string;
+  image_url: string | null;
+  created_at: string;
+  sender_avatar_url: string | null;
+}
+
+export async function saveMessage({
+  communityId,
+  senderId,
+  content,
+  imageUrl,
+}: {
+  communityId: string;
+  senderId: string;
+  content: string;
+  imageUrl: string | null;
+}): Promise<SavedMessage> {
+  const { data, error } = await supabase
+    .from('community_messages')
+    .insert({
+      community_id: communityId,
+      sender_id: senderId,
+      content,
+      image_url: imageUrl,
+    })
+    .select('id, content, image_url, created_at, sender:profiles!sender_id(avatar_url)')
+    .single();
+
+  if (error || !data) {
+    throw new AppError(500, 'Failed to save message');
+  }
+
+  const d = data as {
+    id: string; content: string; image_url: string | null; created_at: string;
+    sender: { avatar_url: string | null } | null;
+  };
+
+  return {
+    id: d.id,
+    content: d.content,
+    image_url: d.image_url,
+    created_at: d.created_at,
+    sender_avatar_url: d.sender?.avatar_url ?? null,
+  };
+}
+
+export async function getMessages(
+  communityId: string,
+  limit: number,
+  beforeId?: string,
+): Promise<{
+  id: string; community_id: string; content: string; image_url: string | null;
+  created_at: string; is_system: boolean;
+  sender: { username: string; avatar_url: string | null };
+}[]> {
+  let query = supabase
+    .from('community_messages')
+    .select('id, community_id, content, image_url, created_at, is_system, sender:profiles!sender_id(username, avatar_url)')
+    .eq('community_id', communityId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (beforeId) {
+    // Get the created_at of the cursor message then fetch older
+    const { data: cursor } = await supabase
+      .from('community_messages')
+      .select('created_at')
+      .eq('id', beforeId)
+      .single();
+
+    if (cursor) {
+      query = query.lt('created_at', cursor.created_at);
+    }
+  }
+
+  const { data, error } = await query;
+  if (error) throw new AppError(500, 'Failed to fetch messages');
+
+  // Return in ascending order for display
+  const rows = (data ?? []) as {
+    id: string; community_id: string; content: string; image_url: string | null;
+    created_at: string; is_system: boolean;
+    sender: { username: string; avatar_url: string | null } | null;
+  }[];
+
+  return rows.reverse().map(r => ({
+    id: r.id,
+    community_id: r.community_id,
+    content: r.content,
+    image_url: r.image_url,
+    created_at: r.created_at,
+    is_system: r.is_system ?? false,
+    sender: {
+      username: r.sender?.username ?? 'Unknown',
+      avatar_url: r.sender?.avatar_url ?? null,
+    },
+  }));
 }

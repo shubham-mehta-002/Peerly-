@@ -18,6 +18,7 @@ const router = Router();
 router.post('/register', validateBody(registerSchema), controller.register);
 router.post('/login', validateBody(loginSchema), controller.login);
 router.post('/refresh-token', validateBody(refreshTokenSchema), controller.refreshTokenHandler);
+router.post('/logout', authenticate, controller.logoutHandler);
 router.get('/me', authenticate, controller.me);
 
 // Password reset

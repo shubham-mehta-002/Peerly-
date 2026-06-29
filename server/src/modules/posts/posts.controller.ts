@@ -23,7 +23,7 @@ export async function getGlobalFeed(req: Request, res: Response): Promise<void> 
   const posts = await postsService.getFeed({
     ...query,
     feedType: 'global',
-    campusId: req.user.campusId!,
+    campusId: req.user.campusId ?? '',
     viewerUserId: req.user.userId,
   });
   res.json(posts);

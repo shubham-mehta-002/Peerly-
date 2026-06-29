@@ -13,10 +13,19 @@ export async function register(req: Request, res: Response): Promise<void> {
 // Authenticate an existing user and return access and refresh tokens.
 export async function login(req: Request, res: Response): Promise<void> {
   const { email, password } = req.body;
-  console.log({email, password})
+  console.log({ email, password })
 
   const result = await authService.login(email, password);
   res.json(result);
+}
+
+// Revoke a refresh token on logout.
+export async function logoutHandler(req: Request, res: Response): Promise<void> {
+  const { refreshToken } = req.body as { refreshToken?: string };
+  if (refreshToken) {
+    await authService.logout(refreshToken);
+  }
+  res.json({ success: true });
 }
 
 // Exchange a valid refresh token for a new access token pair.
