@@ -6,6 +6,7 @@ import { rateLimit } from 'express-rate-limit';
 import { config } from './config';
 import { logger } from './shared/logger';
 import { AppError } from './shared/errors';
+import { supabase } from './integrations/supabase';
 import authRouter from "./modules/auth/auth.router";
 import postsRouter from "./modules/posts/posts.router";
 import onboardingRouter from "./modules/onboarding/onboarding.router";
@@ -61,9 +62,21 @@ app.use('/api/admin', adminRouter);
 app.use('/api/communities', communitiesRouter);
 
 
-// Health check
-app.get('/health', (_req: Request, res: Response) => {
-  res.json({ status: 'ok', env: config.NODE_ENV });
+// Health check — pings DB to verify connectivity
+app.get('/health', async (_req: Request, res: Response) => {
+  const start = Date.now();
+  try {
+    const { error } = await supabase.from('colleges').select('id').limit(1);
+    if (error) throw error;
+    res.json({ status: 'ok', db: 'reachable', latency_ms: Date.now() - start, env: config.NODE_ENV });
+  } catch (err) {
+    res.status(503).json({
+      status: 'degraded',
+      db: 'unreachable',
+      error: err instanceof Error ? err.message : String(err),
+      env: config.NODE_ENV,
+    });
+  }
 });
 
 
