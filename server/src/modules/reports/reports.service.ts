@@ -81,10 +81,10 @@ export async function getAdminReports(options: AdminReportsQuery): Promise<PostR
 
   if (sortedPostIds.length === 0) return [];
 
-  // Fetch the actual posts
+  // Fetch the actual posts with is_hidden
   const { data: posts, error: postsErr } = await supabase
     .from('posts')
-    .select('id, content, created_at, author:profiles!author_id(username, name, avatar_url)')
+    .select('id, content, created_at, is_hidden, author:profiles!author_id(username, name, avatar_url)')
     .in('id', sortedPostIds);
 
   if (postsErr) {
@@ -104,7 +104,7 @@ export async function getAdminReports(options: AdminReportsQuery): Promise<PostR
       },
       created_at: p.created_at,
       report_count: countMap.get(p.id) ?? 0,
-      is_hidden: false, // column added by migrations.sql
+      is_hidden: p.is_hidden ?? false,
       reason_breakdown: breakdownMap.get(p.id) ?? {},
     };
   });
