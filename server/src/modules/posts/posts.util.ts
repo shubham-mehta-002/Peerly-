@@ -3,8 +3,9 @@ import { DisplayAuthor, PostResponse } from './posts.types';
 
 export const POST_SELECT = `
   id, author_id, college_id, content, image_urls, is_global, is_anonymous,
-  upvotes, downvotes, comment_count, heat_score, created_at, campus_id,
-  author:profiles!author_id(username, name, avatar_url)
+  upvotes, downvotes, comment_count, heat_score, created_at, campus_id, is_hidden,
+  author:profiles!author_id(username, name, avatar_url),
+  college:colleges!college_id(name)
 `;
 
 export function computeHeatScore(
@@ -51,7 +52,14 @@ export function buildPostResponse(
   userHasReported: boolean
 ): PostResponse {
   const author = post.author as { username: string; name: string | null; avatar_url: string | null } | null;
-  const collegeName = (post.college as { name: string } | null)?.name ?? 'Unknown';
+
+  // Supabase can return joined rows as object or single-element array
+  const rawCollege = post.college;
+  const collegeName: string = Array.isArray(rawCollege)
+    ? (rawCollege[0]?.name ?? 'Unknown')
+    : ((rawCollege as { name: string } | null)?.name ?? 'Unknown');
+
+  console.log('[college debug]', { college_id: post.college_id, rawCollege, collegeName });
   const display_author = maskAuthor(
     post.author_id,
     post.is_anonymous,
@@ -67,7 +75,7 @@ export function buildPostResponse(
 
   return {
     ...rest,
-    is_hidden: false, // column not yet in schema; default to false
+    is_hidden: post.is_hidden ?? false,
     display_author,
     user_vote: userVote,
     user_has_reported: userHasReported,

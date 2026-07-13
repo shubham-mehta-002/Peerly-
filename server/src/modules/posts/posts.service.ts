@@ -49,11 +49,10 @@ export async function getFeed(
   let query = supabase.from('posts').select(POST_SELECT);
 
   if (feedType === 'campus') {
-    query = query.eq('campus_id', campusId) as any;
+    query = query.eq('campus_id', campusId).eq('is_hidden', false) as any;
   } else {
-    query = query.eq('is_global', true) as any;
+    query = query.eq('is_global', true).eq('is_hidden', false) as any;
   }
-  // Note: is_hidden column not present in current schema — filter omitted
 
   switch (sort) {
     case 'oldest': query = query.order('created_at', { ascending: true }) as any; break;
