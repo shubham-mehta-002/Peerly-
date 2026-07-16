@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import { Toaster } from 'sonner';
 import { QueryProvider } from '@/lib/providers/query-provider';
 import { SkeletonProvider } from '@/lib/providers/skeleton-provider';
 import { TweaksProvider } from '@/lib/providers/tweaks-provider';
@@ -19,11 +20,18 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} dark`}>
-      <body>
+      <body suppressHydrationWarning>
         <QueryProvider>
           <SkeletonProvider>
             <TweaksProvider>
               {children}
+              <Toaster
+                position="bottom-right"
+                theme="dark"
+                richColors
+                closeButton
+                toastOptions={{ duration: 3500 }}
+              />
             </TweaksProvider>
           </SkeletonProvider>
         </QueryProvider>
