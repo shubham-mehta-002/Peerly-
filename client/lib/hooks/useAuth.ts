@@ -134,11 +134,9 @@ export function useForgotPassword() {
 }
 
 export function useResetPassword() {
-  const router = useRouter();
   return useMutation({
     mutationFn: (body: { token: string; newPassword: string }) =>
       api.post('/api/auth/reset-password', body).then(r => r.data),
-    onSuccess: () => router.push('/auth/login'),
   });
 }
 

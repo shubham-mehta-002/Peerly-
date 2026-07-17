@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { FormInput } from '@/components/ui/form-input';
 import { ErrorMessage } from '@/components/ui/error-message';
@@ -146,7 +147,12 @@ export default function LoginPage() {
               onChange={e => { setOtp((e.target as HTMLInputElement).value); if (verify.error) verify.reset(); }}
             />
             <Button
-              onClick={() => { if (otp.length === 6) verify.mutate({ email: pendingEmail, otp }); }}
+              onClick={() => {
+                if (otp.length === 6) verify.mutate({ email: pendingEmail, otp }, {
+                  onSuccess: () => toast.success('Email verified! Welcome to Peerly 🎉'),
+                  onError: (e) => toast.error((e as ApiError).response?.data?.error ?? 'Verification failed'),
+                });
+              }}
               disabled={verify.isPending || otp.length !== 6}
               className="w-full justify-center"
             >
@@ -155,7 +161,10 @@ export default function LoginPage() {
             <div className="text-center text-[13px] text-[var(--muted)]">
               Didn&apos;t receive it?{' '}
               <button
-                onClick={() => resend.mutate(pendingEmail)}
+                onClick={() => resend.mutate(pendingEmail, {
+                  onSuccess: () => toast.success('Code resent — check your inbox'),
+                  onError: () => toast.error('Failed to resend code'),
+                })}
                 disabled={resend.isPending}
                 className="bg-transparent border-none cursor-pointer text-[var(--accent)] text-[13px] p-0 font-[inherit]"
               >
@@ -234,7 +243,12 @@ export default function LoginPage() {
                 </button>
               </div>
               <Button
-                onClick={() => { if (email && password) login.mutate({ email, password }); }}
+                onClick={() => {
+                  if (email && password) login.mutate({ email, password }, {
+                    onSuccess: () => toast.success('Signed in'),
+                    onError: (e) => toast.error((e as ApiError).response?.data?.error ?? 'Sign in failed'),
+                  });
+                }}
                 disabled={login.isPending || !email || !password}
                 className="w-full justify-center mt-1"
               >
@@ -274,7 +288,8 @@ export default function LoginPage() {
                 onClick={() => {
                   if (email && password && password === confirmPassword) {
                     register.mutate({ email, password }, {
-                      onSuccess: data => { setPendingEmail(data.email); setStep('otp'); },
+                      onSuccess: data => { setPendingEmail(data.email); setStep('otp'); toast.info('Check your email for a verification code'); },
+                      onError: (e) => toast.error((e as ApiError).response?.data?.error ?? 'Registration failed'),
                     });
                   }
                 }}

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { FormInput } from '@/components/ui/form-input';
 import { ErrorMessage } from '@/components/ui/error-message';
@@ -12,6 +13,7 @@ function ResetPasswordForm() {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const params = useSearchParams();
+  const router = useRouter();
   const token = params.get('token') ?? '';
   const reset = useResetPassword();
 
@@ -66,7 +68,13 @@ function ResetPasswordForm() {
       <ErrorMessage message={errorMsg} />
       <Button
         disabled={!password || !confirm || mismatch || weak || !token || reset.isPending}
-        onClick={() => reset.mutate({ token, newPassword: password })}
+        onClick={() => reset.mutate({ token, newPassword: password }, {
+          onSuccess: () => {
+            toast.success('Password updated — you can sign in now');
+            router.push('/auth/login');
+          },
+          onError: (e) => toast.error((e as ApiError).response?.data?.error ?? 'Reset failed'),
+        })}
         className="w-full justify-center mt-1"
       >
         {reset.isPending ? 'Saving…' : 'Set new password'}

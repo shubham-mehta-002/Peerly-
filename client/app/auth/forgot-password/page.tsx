@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { FormInput } from '@/components/ui/form-input';
 import { ErrorMessage } from '@/components/ui/error-message';
@@ -20,7 +21,10 @@ export default function ForgotPasswordPage() {
 
   const handleSend = () => {
     if (!email.trim()) return;
-    forgot.mutate({ email }, { onSuccess: () => setSent(true) });
+    forgot.mutate({ email }, {
+      onSuccess: () => { setSent(true); toast.success('Reset link sent — check your inbox'); },
+      onError: () => toast.error('Failed to send reset link'),
+    });
   };
 
   return (
