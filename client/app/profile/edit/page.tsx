@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { useMyProfile, useUpdateProfile } from '@/lib/hooks/useProfile';
 import { uploadImage } from '@/lib/cloudinary';
+import { toast } from 'sonner';
 
 export default function ProfileEditPage() {
   const router = useRouter();
@@ -43,6 +44,7 @@ export default function ProfileEditPage() {
     e.preventDefault();
     setError('');
     setUploading(true);
+    const toastId = toast.loading('Saving profile…');
     try {
       let avatar_url = profile?.avatar_url ?? undefined;
       if (avatarFile) {
@@ -51,9 +53,11 @@ export default function ProfileEditPage() {
         avatar_url = await uploadImage(compressed as File);
       }
       await updateProfile.mutateAsync({ name: name.trim() || undefined, bio: bio.trim(), avatar_url });
+      toast.success('Profile updated', { id: toastId });
       router.push('/profile/me');
     } catch {
       setError('Failed to save profile');
+      toast.error('Failed to save profile', { id: toastId });
     } finally {
       setUploading(false);
     }

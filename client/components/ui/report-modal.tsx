@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { useReportPost } from '@/lib/hooks/useReports';
 import type { ApiError } from '@/lib/types';
 
@@ -36,10 +37,12 @@ export function ReportModal({ postId, onClose }: ReportModalProps) {
         reason,
         customText: reason === 'other' ? customText.trim() : undefined,
       });
+      toast.success('Report submitted — thanks for keeping Peerly safe');
       onClose();
     } catch (err: unknown) {
       const msg = (err as ApiError)?.response?.data?.error;
       setError(msg ?? 'Failed to submit report');
+      toast.error(msg ?? 'Failed to submit report');
     }
   };
 

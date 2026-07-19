@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { useCreatePost } from '@/lib/hooks/useFeed';
 import { uploadImage } from '@/lib/cloudinary';
+import { toast } from 'sonner';
 import type { ApiError } from '@/lib/types';
 
 const CHAR_LIMIT = 500;
@@ -55,14 +56,19 @@ export default function CreatePostPage() {
     if (!content.trim()) return;
     setUploadError('');
     setUploading(true);
+    const toastId = toast.loading('Publishing post…');
     try {
       const image_urls = imageFiles.length > 0 ? await Promise.all(imageFiles.map(uploadImage)) : [];
       createPost.mutate(
         { content: content.trim(), image_urls, is_global: isGlobal, is_anonymous: isAnon },
-        { onSuccess: () => router.push('/feed') }
+        {
+          onSuccess: () => { toast.success('Post published!', { id: toastId }); router.push('/feed'); },
+          onError: (e) => { toast.error((e as ApiError).response?.data?.error ?? 'Failed to publish', { id: toastId }); },
+        }
       );
     } catch {
       setUploadError('Image upload failed. Try again.');
+      toast.error('Image upload failed', { id: toastId });
     } finally {
       setUploading(false);
     }
