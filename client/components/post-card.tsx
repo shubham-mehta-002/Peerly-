@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { useTweaks } from '@/lib/providers/tweaks-provider';
 import { PeerlyAvatar } from './ui/peer-avatar';
 import { AnonLabel } from './ui/anon-label';
 import { ImageCarousel } from './ui/image-carousel';
 import { formatRelativeTime } from '@/lib/time';
-import { usePostVote, type PostResponse } from '@/lib/hooks/useFeed';
+import { usePostVote, useDeletePost, type PostResponse } from '@/lib/hooks/useFeed';
 import { ReportModal } from './ui/report-modal';
 
 interface PostCardProps {
@@ -24,6 +26,8 @@ export function PostCard({ post, onClick }: PostCardProps) {
   const { localVote, localUpvotes, handleVote } = usePostVote(post);
   const [showMenu, setShowMenu] = useState(false);
   const [showReport, setShowReport] = useState(false);
+  const deletePost = useDeletePost();
+  const router = useRouter();
 
   const isAnon = post.is_anonymous && isAnonymousDisplay(post.display_author.username);
   const displayName = isAnon ? null : (post.display_author.name || post.display_author.username);
@@ -33,6 +37,16 @@ export function PostCard({ post, onClick }: PostCardProps) {
     cardLayout === 'filled'
       ? 'bg-[var(--card)] border border-[var(--border)] rounded-xl p-[18px_20px] mb-2'
       : 'bg-[var(--background)] border border-[var(--border)] rounded-xl p-[18px_20px] mb-2';
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowMenu(false);
+    if (!confirm('Delete this post?')) return;
+    deletePost.mutate(post.id, {
+      onSuccess: () => toast.success('Post deleted'),
+      onError: () => toast.error('Failed to delete post'),
+    });
+  };
 
   return (
     <div className={`${cardClass} cursor-pointer transition-colors duration-150`} onClick={onClick}>
@@ -46,7 +60,7 @@ export function PostCard({ post, onClick }: PostCardProps) {
         />
         <div>
           {isAnon
-            ? <AnonLabel scope={post.is_global ? 'global' : 'campus'} />
+            ? <span className="text-[13px] text-[var(--muted)]">{post.display_author.username}</span>
             : <span className="text-[13px] font-semibold text-[var(--foreground)]">{displayName}</span>}
           <div className="flex gap-1.5 mt-px">
             <span className="text-xs text-[var(--muted)]">{formatRelativeTime(post.created_at)}</span>
@@ -84,38 +98,57 @@ export function PostCard({ post, onClick }: PostCardProps) {
           <span className="text-[11px] font-semibold text-[var(--accent)] tracking-wider uppercase">Trending</span>
         )}
 
-        {!post.is_own && (
-          <div className="ml-auto relative">
-            {post.user_has_reported && (
-              <span className="text-[11px] text-[var(--muted)] font-medium mr-2">Reported</span>
-            )}
-            <button
-              onClick={e => { e.stopPropagation(); setShowMenu(v => !v); }}
-              className="bg-transparent border-none cursor-pointer text-[var(--muted)] text-base px-1 leading-none"
-            >⋯</button>
-            {showMenu && (
-              <>
-                <div
-                  onClick={e => { e.stopPropagation(); setShowMenu(false); }}
-                  className="fixed inset-0 z-20"
-                />
-                <div className="absolute right-0 top-full z-30 mt-1 bg-[var(--background)] border border-[var(--border)] rounded-lg shadow-md min-w-[130px] overflow-hidden">
-                  <button
-                    onClick={e => { e.stopPropagation(); setShowMenu(false); if (!post.user_has_reported) setShowReport(true); }}
-                    disabled={post.user_has_reported}
-                    className="block w-full text-left px-3.5 py-2.5 bg-transparent border-none text-[13px] font-[inherit]"
-                    style={{
-                      cursor: post.user_has_reported ? 'default' : 'pointer',
-                      color: post.user_has_reported ? 'var(--muted)' : 'var(--foreground)',
-                    }}
-                  >
-                    {post.user_has_reported ? 'Reported' : 'Report post'}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        )}
+        {/* ⋯ menu — always visible */}
+        <div className="ml-auto relative">
+          <button
+            onClick={e => { e.stopPropagation(); setShowMenu(v => !v); }}
+            className="bg-transparent border-none cursor-pointer text-[var(--muted)] text-base px-1 leading-none"
+          >⋯</button>
+
+          {showMenu && (
+            <>
+              <div
+                onClick={e => { e.stopPropagation(); setShowMenu(false); }}
+                className="fixed inset-0 z-20"
+              />
+              <div className="absolute right-0 top-full z-30 mt-1 bg-[var(--background)] border border-[var(--border)] rounded-lg shadow-md min-w-[130px] overflow-hidden">
+                {post.is_own ? (
+                  <>
+                    <button
+                      onClick={e => { e.stopPropagation(); setShowMenu(false); router.push(`/posts/${post.id}`); }}
+                      className="block w-full text-left px-3.5 py-2.5 bg-transparent border-none cursor-pointer text-[13px] text-[var(--foreground)] font-[inherit]"
+                    >
+                      View post
+                    </button>
+                    <button
+                      onClick={handleDelete}
+                      disabled={deletePost.isPending}
+                      className="block w-full text-left px-3.5 py-2.5 bg-transparent border-none cursor-pointer text-[13px] text-red-500 font-[inherit]"
+                      style={{ opacity: deletePost.isPending ? 0.6 : 1 }}
+                    >
+                      {deletePost.isPending ? 'Deleting…' : 'Delete post'}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    {post.user_has_reported ? (
+                      <div className="px-3.5 py-2.5 text-[13px] text-[var(--muted)]">
+                        Reported
+                      </div>
+                    ) : (
+                      <button
+                        onClick={e => { e.stopPropagation(); setShowMenu(false); setShowReport(true); }}
+                        className="block w-full text-left px-3.5 py-2.5 bg-transparent border-none cursor-pointer text-[13px] text-[var(--foreground)] font-[inherit]"
+                      >
+                        Report post
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {showReport && <ReportModal postId={post.id} onClose={() => setShowReport(false)} />}
