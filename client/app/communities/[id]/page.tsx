@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { toast } from 'sonner';
 import { PeerlyAvatar } from '@/components/ui/peer-avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -220,10 +221,11 @@ export default function CommunityPage() {
   const handleLeave = () => {
     setIsSoleAdmin(false);
     leave.mutate(id, {
-      onSuccess: () => router.push('/communities'),
+      onSuccess: () => { toast.success('Left community'); router.push('/communities'); },
       onError: (err: unknown) => {
         const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? '';
         if (msg.toLowerCase().includes('only admin')) setIsSoleAdmin(true);
+        else toast.error(msg || 'Failed to leave community');
       },
     });
   };
@@ -248,7 +250,10 @@ export default function CommunityPage() {
           <p className="text-sm text-[var(--muted)] leading-relaxed mb-6 max-w-[260px]">
             Join <strong className="text-[var(--foreground)]">{community.name}</strong> to read and send messages.
           </p>
-          <Button onClick={() => join.mutate(id, { onSuccess: () => refetchCommunity() })} disabled={join.isPending}>
+          <Button onClick={() => join.mutate(id, {
+            onSuccess: () => { refetchCommunity(); toast.success('Joined community!'); },
+            onError: () => toast.error('Failed to join community'),
+          })} disabled={join.isPending}>
             {join.isPending ? 'Joining…' : 'Join community'}
           </Button>
         </div>
@@ -377,7 +382,10 @@ export default function CommunityPage() {
           onConfirm={handleLeave}
           onCancel={() => { setShowLeaveDialog(false); setIsSoleAdmin(false); }}
           onAssignAdmin={() => { setShowLeaveDialog(false); setIsSoleAdmin(false); setShowMembers(true); }}
-          onDelete={() => deleteCommunity.mutate(id, { onSuccess: () => router.push('/communities') })} />
+          onDelete={() => deleteCommunity.mutate(id, {
+            onSuccess: () => { toast.success('Community deleted'); router.push('/communities'); },
+            onError: () => toast.error('Failed to delete community'),
+          })} />
       )}
     </div>
   );

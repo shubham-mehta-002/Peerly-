@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { toast } from 'sonner';
 import { ContentShell } from '@/components/content-shell';
 import { PeerlyAvatar } from '@/components/ui/peer-avatar';
 import { AnonLabel } from '@/components/ui/anon-label';
@@ -123,7 +124,13 @@ function PostContent({ post, postId }: { post: PostResponse; postId: string }) {
 
   const handleComment = () => {
     if (!comment.trim()) return;
-    addComment.mutate({ postId, content: comment.trim() }, { onSuccess: () => setComment('') });
+    addComment.mutate(
+      { postId, content: comment.trim() },
+      {
+        onSuccess: () => { setComment(''); toast.success('Comment posted'); },
+        onError: () => toast.error('Failed to post comment'),
+      }
+    );
   };
 
   return (
@@ -140,7 +147,7 @@ function PostContent({ post, postId }: { post: PostResponse; postId: string }) {
           <PeerlyAvatar name={post.display_author.username} src={post.display_author.avatar_url ?? undefined} size={38} anon={authorIsAnon} />
           <div>
             {authorIsAnon
-              ? <AnonLabel scope={post.is_global ? 'global' : 'campus'} />
+              ? <span className="text-sm text-[var(--muted)]">{post.display_author.username}</span>
               : <span className="text-sm font-semibold text-[var(--foreground)]">{displayName}</span>}
             <div className="flex gap-2 items-center mt-0.5">
               <span className="text-xs text-[var(--muted)]">{formatRelativeTime(post.created_at)}</span>
