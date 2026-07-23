@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { toast } from 'sonner';
 import { ContentShell } from '@/components/content-shell';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { useAdminColleges, useCreateCollege, useUpdateCollege } from '@/lib/hooks/useAdmin';
@@ -166,10 +168,18 @@ export default function AdminPage() {
               <div key={r.id} className="py-4" style={{ borderTop: i > 0 ? '1px solid var(--border)' : 'none' }}>
                 <div className="flex items-start gap-3.5">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className="text-[13px] font-semibold text-[var(--foreground)]">{r.author.name || r.author.username}</span>
                       <span className="text-xs text-[var(--muted)]">{formatRelativeTime(r.created_at)}</span>
                       {r.is_hidden && <span className="text-[11px] text-red-500 border border-red-500/40 rounded px-1.5 py-px font-medium">Hidden</span>}
+                      <Link
+                        href={`/posts/${r.id}`}
+                        target="_blank"
+                        className="text-[11px] text-[var(--accent)] underline underline-offset-2 ml-auto"
+                        onClick={e => e.stopPropagation()}
+                      >
+                        View post ↗
+                      </Link>
                     </div>
                     <p className="text-sm text-[var(--foreground)] mb-2 overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                       {r.content}
@@ -182,11 +192,17 @@ export default function AdminPage() {
                     </div>
                   </div>
                   {r.is_hidden ? (
-                    <button onClick={() => unhidePost.mutate(r.id)} disabled={unhidePost.isPending}
+                    <button onClick={() => unhidePost.mutate(r.id, {
+                      onSuccess: () => toast.success('Post unhidden'),
+                      onError: () => toast.error('Failed to unhide post'),
+                    })} disabled={unhidePost.isPending}
                       className="shrink-0 px-3.5 py-1.5 rounded-md border border-[var(--border)] bg-transparent text-[var(--muted)] text-xs font-medium cursor-pointer font-[inherit]"
                       style={{ opacity: unhidePost.isPending ? 0.6 : 1 }}>Unhide</button>
                   ) : (
-                    <button onClick={() => hidePost.mutate(r.id)} disabled={hidePost.isPending}
+                    <button onClick={() => hidePost.mutate(r.id, {
+                      onSuccess: () => toast.success('Post hidden'),
+                      onError: () => toast.error('Failed to hide post'),
+                    })} disabled={hidePost.isPending}
                       className="shrink-0 px-3.5 py-1.5 rounded-md border border-red-500/40 bg-transparent text-red-500 text-xs font-medium cursor-pointer font-[inherit]"
                       style={{ opacity: hidePost.isPending ? 0.6 : 1 }}>Hide post</button>
                   )}
