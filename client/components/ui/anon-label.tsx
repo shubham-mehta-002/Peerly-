@@ -4,11 +4,14 @@ import { useTweaks } from '@/lib/providers/tweaks-provider';
 
 interface AnonLabelProps {
   scope?: 'campus' | 'global';
+  collegeName?: string; // actual college name from the post's display_author
 }
 
-export function AnonLabel({ scope = 'campus' }: AnonLabelProps) {
+export function AnonLabel({ scope = 'campus', collegeName }: AnonLabelProps) {
   const { anonStyle } = useTweaks();
-  const text = scope === 'global' ? 'Anonymous @ Thapar University' : 'Anonymous Peer';
+  const text = scope === 'global'
+    ? `Anonymous @ ${collegeName ?? 'Unknown'}`
+    : 'Anonymous Peer';
 
   if (anonStyle === 'badge') {
     return (

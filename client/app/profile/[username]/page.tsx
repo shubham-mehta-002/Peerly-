@@ -11,6 +11,7 @@ import { useMyProfile, usePublicProfile } from '@/lib/hooks/useProfile';
 import { useUserPosts } from '@/lib/hooks/useFeed';
 import { ProfileSkeleton } from '@/components/skeletons';
 import { PostCard } from '@/components/post-card';
+import { toast } from 'sonner';
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<'posts' | 'anonymous'>('posts');
@@ -105,7 +106,7 @@ export default function ProfilePage() {
             Privacy
           </button>
           <button
-            onClick={logout}
+            onClick={() => { toast.success('Signed out'); logout(); }}
             className="bg-transparent border-none cursor-pointer font-[inherit] text-[13px] text-red-500 p-0 underline underline-offset-[3px]"
           >
             Sign out
