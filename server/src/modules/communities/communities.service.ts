@@ -304,7 +304,7 @@ export async function saveMessage({
     throw new AppError(500, 'Failed to save message');
   }
 
-  const d = data as {
+  const d = data as unknown as {
     id: string; content: string; image_url: string | null; created_at: string;
     sender: { avatar_url: string | null } | null;
   };
@@ -351,7 +351,7 @@ export async function getMessages(
   if (error) throw new AppError(500, 'Failed to fetch messages');
 
   // Return in ascending order for display
-  const rows = (data ?? []) as {
+  const rows = (data ?? []) as unknown as {
     id: string; community_id: string; content: string; image_url: string | null;
     created_at: string; is_system: boolean;
     sender: { username: string; avatar_url: string | null } | null;
