@@ -263,6 +263,3 @@ const socket = io('http://localhost:5000/communities', {
 
 ---
 
-## License
-
-MIT
