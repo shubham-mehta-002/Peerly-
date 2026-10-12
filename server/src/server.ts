@@ -3,8 +3,16 @@ import { config } from './config';
 import { logger } from './shared/logger';
 import app from './app';
 import { createGateway } from './modules/gateway/gateway';
+import { verifyEmailService } from './integrations/email';
 
 const httpServer = http.createServer(app);
+
+// Verify SMTP connectivity before accepting traffic so a broken mail
+// config surfaces at boot rather than silently failing on a user request.
+verifyEmailService().catch((err) => {
+  logger.error('Mail service failed to initialise — aborting startup', { message: err.message });
+  process.exit(1);
+});
 
 httpServer.listen(config.PORT, () => {
   logger.info('Server started', { port: config.PORT, env: config.NODE_ENV });
@@ -18,7 +26,7 @@ function shutdown(signal: string) {
     logger.info('HTTP server closed');
     process.exit(0);
   });
-  
+
   setTimeout(() => {
     logger.error('Forced shutdown after timeout');
     process.exit(1);

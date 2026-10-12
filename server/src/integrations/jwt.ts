@@ -13,7 +13,7 @@ interface RefreshTokenPayload extends JWTPayload {
 }
 
 const accessSecret = config.JWT_SECRET;
-const refreshSecret = config.JWT_REFRESH_SECRET || config.JWT_SECRET;
+const refreshSecret = config.JWT_REFRESH_SECRET;
 
 export function signAccessToken(payload: JWTPayload): string {
     return jwt.sign(payload, accessSecret, {
