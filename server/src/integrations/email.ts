@@ -3,13 +3,12 @@ import { config } from '../config';
 import { AppError } from '../shared/errors';
 import { logger } from '../shared/logger';
 
-// Port 465 + secure:true uses direct TLS (no STARTTLS handshake).
-// Port 587 + secure:false relies on STARTTLS, which is frequently blocked
-// on cloud platforms like Render, causing connection timeouts.
+// Port 587 + secure:false uses STARTTLS — confirmed working on Render.
 const transporter = nodemailer.createTransport({
+  service: 'gmail',
   host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
+  port: 587,
+  secure: false,
   auth: {
     user: config.GMAIL_USER,
     pass: config.GMAIL_APP_PASSWORD,
