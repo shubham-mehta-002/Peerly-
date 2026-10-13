@@ -20,7 +20,7 @@ export async function register(email: string, password: string) {
   const normalizedEmail = email.toLowerCase().trim();
   const domain = extractDomain(normalizedEmail);
   await validateDomain(domain);
-
+  console.log("3...")
   const { data: existing } = await supabase
     .from('users')
     .select('id, is_email_verified')

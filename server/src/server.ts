@@ -7,11 +7,9 @@ import { verifyEmailService } from './integrations/email';
 
 const httpServer = http.createServer(app);
 
-// Verify SMTP connectivity before accepting traffic so a broken mail
-// config surfaces at boot rather than silently failing on a user request.
+// Verify SMTP connectivity on startup — non-fatal, just logs.
 verifyEmailService().catch((err) => {
-  logger.error('Mail service failed to initialise — aborting startup', { message: err.message });
-  process.exit(1);
+  logger.warn('Mail service check failed', { message: err.message });
 });
 
 httpServer.listen(config.PORT, () => {

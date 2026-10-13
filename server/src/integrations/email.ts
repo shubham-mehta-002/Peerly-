@@ -3,31 +3,31 @@ import { config } from '../config';
 import { AppError } from '../shared/errors';
 import { logger } from '../shared/logger';
 
-// Port 587 + secure:false uses STARTTLS — confirmed working on Render.
+// Brevo SMTP relay — works on Render (routes over standard web infrastructure,
+// unlike smtp.gmail.com which Render blocks on ports 465/587).
+// The `from` address must be a verified sender in Brevo dashboard.
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  host: 'smtp.gmail.com',
+  host: 'smtp-relay.brevo.com',
   port: 587,
   secure: false,
   auth: {
-    user: config.GMAIL_USER,
-    pass: config.GMAIL_APP_PASSWORD,
+    user: config.BREVO_SMTP_USER, // your Brevo account email
+    pass: config.BREVO_SMTP_KEY,  // SMTP key from Brevo dashboard → SMTP & API
   },
 });
 
-// Verify SMTP connection on startup and crash loudly if it fails.
-// A broken mail config should surface at boot, not silently at runtime
-// when a real user tries to reset their password.
+// Verify SMTP connection on startup — logs a warning but does NOT
+// crash the server. Keeps the service up even if mail is misconfigured.
 export async function verifyEmailService(): Promise<void> {
   try {
     await transporter.verify();
     logger.info('SMTP connection verified — mail service ready');
   } catch (err: any) {
-    logger.error('SMTP connection failed — check GMAIL_USER and GMAIL_APP_PASSWORD', {
+    logger.warn('SMTP connection failed — email sending will not work. Check BREVO_SMTP_USER and BREVO_SMTP_KEY', {
       message: err.message,
       code: err.code,
     });
-    throw err; // let the caller (server startup) decide whether to abort
+    // intentionally not throwing — let the server start
   }
 }
 
@@ -41,10 +41,13 @@ function escapeHtml(raw: string): string {
     .replace(/'/g, '&#039;');
 }
 
+// SENDER_EMAIL must be a verified sender in Brevo (Senders, domains & IPs → Senders).
+const SENDER_EMAIL = config.GMAIL_USER;
+
 export async function sendPasswordResetEmail(to: string, resetLink: string): Promise<void> {
   try {
     const info = await transporter.sendMail({
-      from: `"Peerly" <${config.GMAIL_USER}>`,
+      from: `"Peerly" <${SENDER_EMAIL}>`,
       to,
       subject: 'Reset your Peerly password',
       html: `
@@ -63,7 +66,7 @@ export async function sendPasswordResetEmail(to: string, resetLink: string): Pro
 export async function sendOTPEmail(to: string, otp: string): Promise<void> {
   try {
     const info = await transporter.sendMail({
-      from: `"Peerly" <${config.GMAIL_USER}>`,
+      from: `"Peerly" <${SENDER_EMAIL}>`,
       to,
       subject: 'Verify your Peerly email',
       html: `
