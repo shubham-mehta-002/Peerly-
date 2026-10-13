@@ -8,11 +8,11 @@ import { logger } from '../shared/logger';
 // The `from` address must be a verified sender in Brevo dashboard.
 const transporter = nodemailer.createTransport({
   host: 'smtp-relay.brevo.com',
-  port: 587,
-  secure: false,
+  port: 465,
+  secure: true,
   auth: {
-    user: config.BREVO_SMTP_USER, // your Brevo account email
-    pass: config.BREVO_SMTP_KEY,  // SMTP key from Brevo dashboard → SMTP & API
+    user: config.BREVO_SMTP_USER,
+    pass: config.BREVO_SMTP_KEY,
   },
 });
 
